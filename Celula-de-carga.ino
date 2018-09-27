@@ -3,6 +3,7 @@
 #define analogPin A0 //nomeia o pino A0 como analogPin      
 
 #define ACEL_G 9.80664999999998 
+#define kgfToN(X) (X*ACEL_G) /*Convert Kgf to N*/
 
 #define __Xi 100.7  /*Valor da celula sem corpo de prova*/
 #define __Xf 507.7  /*Valor da celula com corpo de prova*/
@@ -20,14 +21,12 @@
 #define SERIAL 1
 
 int cel = 0; // cria variável cel(Analogic Digital Conversor - ADC) começando em valor 0
-double kg = 0; // cria variável Kg começando em valor 0
+double kgf = 0, kgfRaw = 0; // cria variável Kgf começando em valor 0
 float tempo = 0; // cria variável tempo começando em valor 0
 SDCH SDC(53, "cell"); //cria o objeto SDC (cartão de memória SD) e atribui o cs ao pino 53
 Helpful help; //cria o objeto help para utilizar a função eachT
 
-MovingAverage AVG(20);
-MovingAverage AVG2(20);
-MovingAverage AVG3(20);
+MovingAverage AVG(5);
 
 void setup()
 {
@@ -39,7 +38,7 @@ void setup()
   Serial.print(__angC, 10);
   Serial.print(" * x - ");
   Serial.print(__linC, 10);
-  Serial.print(" = Kg");
+  Serial.print(" = Kgf");
   Serial.println();
 #endif
     SDC.begin();                 //inicia o SDcard
@@ -52,15 +51,26 @@ void setup()
     Serial.println(SDC.getFname());
 #endif
     //---------------------------------------------------------//
+    SDC.theFile.print("Kgf = ");
+    SDC.tab();
+    SDC.theFile.print(__angC, 9);
+    SDC.tab();
+    SDC.theFile.print("* cell -");
+    SDC.tab();
+    SDC.theFile.print(__linC, 9);
+    SDC.theFile.println();
+    //---------------------------------------------------------//
     SDC.theFile.print("tempo");
     SDC.tab();
-    SDC.theFile.print("vlr.cel");
+    SDC.theFile.print("raw.cell");
     SDC.tab();
-    SDC.theFile.print("vlr.Kg");
-    SDC.tab();
-    SDC.theFile.print("vlr.N");
+    SDC.theFile.print("raw.Kgf");
     SDC.tab();
     SDC.theFile.print("avg.cell");  //Cel filtrado
+    SDC.tab();
+    SDC.theFile.print("avg.Kgf");
+    SDC.tab();
+    SDC.theFile.print("avg.N");
     SDC.theFile.println();
     SDC.close();
   }
@@ -80,9 +90,10 @@ void loop()
 
   cel = analogRead(analogPin); // lê o valor retornado pela célula de carga
   tempo = float(micros()) / 1000000.0;
-//  AVG3 = AVG2 = AVG = cel;
-  AVG3 = cel;
-  kg = eq(AVG3);        //converte o valor para Kg
+
+  AVG = cel;
+  kgf = eq(AVG);        //converte o valor para Kg
+  kgfRaw = eq(cel);
 
   if (SDC) {
     digitalWrite(LED_BUILTIN, HIGH);
@@ -90,11 +101,13 @@ void loop()
     SDC.tab();
     SDC.theFile.print(cel);
     SDC.tab();
-    SDC.theFile.print(kg, 3);
+    SDC.theFile.print(kgfRaw, 3);
     SDC.tab();
-    SDC.theFile.print(kg*ACEL_G, 3);
+    SDC.theFile.print(AVG, 3);
     SDC.tab();
-    SDC.theFile.print(AVG3, 3);
+    SDC.theFile.print(kgf, 3);
+    SDC.tab();
+    SDC.theFile.print(kgfToN(kgf), 3);
     SDC.theFile.println();
     SDC.close();
   }
@@ -104,15 +117,13 @@ void loop()
   Serial.print('\t');
   Serial.print(cel);
   Serial.print('\t');
-//  Serial.print(AVG, 6);
-//  Serial.print('\t');
-//  Serial.print(AVG2, 6);
-//  Serial.print('\t');
-  Serial.print(AVG3, 6);
+  Serial.print(kgfRaw, 6);
   Serial.print('\t');
-  Serial.print(kg, 6);
+  Serial.print(AVG, 6);
   Serial.print('\t');
-  Serial.print(kg*ACEL_G, 6);
+  Serial.print(kgf, 6);
+  Serial.print('\t');
+  Serial.print(kgfToN(kgf), 6);
   Serial.print('\n');
 #endif
 }
