@@ -1,6 +1,6 @@
 #include <Classes.h> //Biblioteca necessária para o uso do cartão SD
 
-#define analogPin A15 //nomeia o pino A0 como analogPin      
+#define analogPin A15 //nomeia o pino de entrada como analogPin      
 
 #define ACEL_G 9.80664999999998 
 #define kgfToN(X) (X*ACEL_G) /*Convert Kgf to N*/
@@ -18,10 +18,10 @@
 //#define eq(X) (((-__dY)*X+((__Xi)*(__Yf))-(__Xf)-(__Yi))/(-__dX))
 
 #define __angC (__dY/__dX)      /*Coeficiente angular*/
-#define __linC (((__Xi)*(__Yf))-(__Xf)-(__Yi))/(-__dX))   /*Coeficiente linear*/
+#define __linC (__Yi-(__angC*__Xi))   /*Coeficiente linear*/
 //#define __linC (__angC*__Xi)    /*Coeficiente linear*/
 
-#define eq(X) ((__angC*X)- __linC) /*Calib. 2018-12-23*/
+#define eq(X) ((__angC*X)+__linC) /*Calib. 2018-12-23*/
 
 #define noiseRange 20
 
@@ -61,11 +61,12 @@ void setup()
 #if SERIAL
   Serial.begin(250000);
   Serial.println();
+  Serial.print("Kgf = (");
   Serial.print(__angC, 10);
-  Serial.print(" * x - ");
+  Serial.print(") * cell + (");
   //Serial.print(__linC, 10);
-  Serial.print(((((__Xi)*(__Yf))-(__Xf)-(__Yi))/(-__dX)), 10);
-  Serial.print(" = Kgf");
+  Serial.print(__linC, 10);
+  Serial.print(")");
   Serial.println();
 #endif
     SDC.begin();                 //inicia o SDcard
@@ -78,15 +79,15 @@ void setup()
     Serial.println(SDC.getFname());
 #endif
     //---------------------------------------------------------//
-    SDC.theFile.print("Kgf = ");
+    SDC.theFile.print("Kgf = (");
     SDC.tab();
     SDC.theFile.print(__angC, 9);
     SDC.tab();
-    SDC.theFile.print("* cell -");
+    SDC.theFile.print(") * cell +(");
     SDC.tab();
     //SDC.theFile.print(__linC, 9);
-    SDC.theFile.print(((((__Xi)*(__Yf))-(__Xf)-(__Yi))/(__dX)),9);
-    SDC.theFile.println();
+    SDC.theFile.print(__linC,9);
+    SDC.theFile.println(")");
     //---------------------------------------------------------//
     SDC.theFile.print("tempo");
     SDC.tab();
