@@ -1,14 +1,21 @@
 #include <Classes.h> //Biblioteca necessária para o uso do cartão SD
 
+/*
+ * Red   = V + 
+ * Black = V - 
+ * Green = O + 
+ * White = O - 
+ */
+
 #define analogPin A15 //nomeia o pino de entrada como analogPin      
 
 #define ACEL_G 9.80664999999998 
 #define kgfToN(X) (X*ACEL_G) /*Convert Kgf to N*/
 
-#define __Xi 29.8 /*Valor da celula sem corpo de prova*/
-#define __Xf 615.0  /*Valor da celula com corpo de prova*/
+#define __Xi 18.0 /*Valor da celula sem corpo de prova*/
+#define __Xf 254.0  /*Valor da celula com corpo de prova*/
 #define __Yi 0.0   /*Deve conter o valor 0*/
-#define __Yf 88.2  /*Peso real do corpo de prova (kg)*/
+#define __Yf 100.8  /*Peso real do corpo de prova (kg)*/
 
 //7.684 - > 61.7
 
@@ -31,12 +38,13 @@
 #define BEEPING (BuZZ && 1)
 
 #if BuZZ
-#define buzzPin A0              //Pin that the buzzer is connected
+#define buzzPin 22              //Pin that the buzzer is connected
+// #define buzzPin 13              //Pin that the buzzer is connected
 #define buzzCmd LOW             //Buzzer is on in high state
 #endif // BuZZ
 
-#if BEEPING
 #define holdT .1
+#if BEEPING
 Helpful beeper;
 #endif // BEEPING
 
@@ -51,7 +59,7 @@ Helpful help; //cria o objeto help para utilizar a função eachT
 MovingAverage AVG(20);
 MovingAverage RNG(5);
 
-unsigned short sysC = 0;
+unsigned short sysC = 2;
 int lastRead = 0;
 
 void setup()
@@ -73,6 +81,7 @@ void setup()
     pinMode(analogPin, INPUT);   //configura o pino A0 como entrada
 
   if (SDC) {
+    sysC++;
   digitalWrite(LED_BUILTIN, LOW);
 #if SERIAL
     Serial.println("SD Begin");
@@ -87,7 +96,7 @@ void setup()
     SDC.tab();
     //SDC.theFile.print(__linC, 9);
     SDC.theFile.print(__linC,9);
-    SDC.theFile.println(")");
+    SDC.theFile.println("\t)");
     //---------------------------------------------------------//
     SDC.theFile.print("tempo");
     SDC.tab();
@@ -115,7 +124,7 @@ void setup()
   digitalWrite(buzzPin, !buzzCmd);
 #endif // BuZZ
 #if BEEPING
-  beep();
+  beep(sysC);
 #endif // BEEPING
 }
 
@@ -183,7 +192,9 @@ void loop()
   Serial.print('\t');
   Serial.print(sysC);
 #endif
-  beep(sysC);
+#if BEEPING
+  beep();
+#endif // BEEPING
   lastRead = cel;
 
 #if SERIAL
