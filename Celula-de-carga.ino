@@ -193,7 +193,7 @@ void loop()
   Serial.print(sysC);
 #endif
 #if BEEPING
-  beep();
+  beep(sysC);
 #endif // BEEPING
   lastRead = cel;
 
