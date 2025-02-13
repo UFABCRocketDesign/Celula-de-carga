@@ -50,9 +50,9 @@
 #define kgfToN(X) (X*ACEL_G) /*Convert Kgf to N*/
 
 #define __Xi 18.0 /*Valor da celula sem corpo de prova*/
-#define __Xf 257.0  /*Valor da celula com corpo de prova*/
+#define __Xf 256.0  /*Valor da celula com corpo de prova*/
 #define __Yi 0.0   /*Deve conter o valor 0*/
-#define __Yf 100.8  /*Peso real do corpo de prova (kg)*/
+#define __Yf 101.8  /*Peso real do corpo de prova (kg)*/
 
 //7.684 - > 61.7
 
@@ -71,12 +71,12 @@
 #endif // USAR_CELULA
 
 #if USAR_TRANSDUTOR
-#define noiseRangeTransd 1
+#define noiseRangeTransd 5
 #endif // USAR_TRANSDUTOR
 
 #if BEEPING
 Helpful beeper;
-#define holdT .1
+#define holdT 0.1
 #endif // BEEPING
 
 // Contagem de partes do sistema (serve pra apitar certo)
@@ -111,7 +111,11 @@ float bar;
 float tempo = 0; // cria variável tempo começando em valor 0
 
 #if USAR_SD
+#if USAR_CELULA
 SDCH SDC(53, "cell"); //cria o objeto SDC (cartão de memória SD) e atribui o cs ao pino 53
+#else
+SDCH SDC(53, "hidro"); //cria o objeto SDC (cartão de memória SD) e atribui o cs ao pino 53
+#endif // USAR_CELULA
 #endif // USAR_SD
 
 #if USAR_CELULA
@@ -356,7 +360,7 @@ void loop()
   avgDeltaCell = deltaCell; // Filtra a diferença
   if(!helpCell.oneTime()) helpCell.comparer(deltaCell); // Pula a primeira leitura para valor de delta ser coerente
 
-  if(deltaCell > noiseRangeCell) helpCell.forT(holdT * SYSTEM_n * 4); // "Segura" valor verdadeiro por intervalo de tempo
+  if(deltaCell > noiseRangeCell) helpCell.forT(holdT * SYSTEM_n * 10); // "Segura" valor verdadeiro por intervalo de tempo
   if(helpCell.forT()) sysC++; // Se for valor verdadeiro, adiciona ao contador de beeps
 
   #if USAR_SERIAL
@@ -376,7 +380,7 @@ void loop()
   deltaTransd = abs(rawTransd - lastTransd); // Calcula diferença de medida atual e anterior
   if(!helpTransd.oneTime()) helpTransd.comparer(deltaTransd); // Pula a primeira leitura para valor de delta ser coerente
 
-  if(deltaTransd > noiseRangeTransd) helpTransd.forT(holdT * SYSTEM_n * 4); // "Segura" valor verdadeiro por intervalo de tempo
+  if(deltaTransd > noiseRangeTransd) helpTransd.forT(holdT * SYSTEM_n * 10); // "Segura" valor verdadeiro por intervalo de tempo
   if(helpTransd.forT()) sysC++; // Se for valor verdadeiro, adiciona ao contador de beeps
 
   #if USAR_SERIAL
@@ -402,7 +406,7 @@ void loop()
 #if BEEPING
 inline void beep(unsigned int N)
 {
-  if (beeper.eachT(holdT*SYSTEM_n * 4) || beeper.oneTime())
+  if (beeper.eachT(holdT*SYSTEM_n * 10) || beeper.oneTime())
   {
     beeper.mem = buzzCmd;
     beeper.counterReset();
