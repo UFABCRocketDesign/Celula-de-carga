@@ -49,10 +49,10 @@
 #define ACEL_G 9.80664999999998 // m/s^2 = 1g
 #define kgfToN(X) (X*ACEL_G) /*Convert Kgf to N*/
 
-#define __Xi 18.0 /*Valor da celula sem corpo de prova*/
-#define __Xf 256.0  /*Valor da celula com corpo de prova*/
+#define __Xi 24.0 /*Valor da celula sem corpo de prova*/
+#define __Xf 250.0  /*Valor da celula com corpo de prova*/
 #define __Yi 0.0   /*Deve conter o valor 0*/
-#define __Yf 101.8  /*Peso real do corpo de prova (kg)*/
+#define __Yf 101.1  /*Peso real do corpo de prova (kg)*/
 
 //7.684 - > 61.7
 
@@ -137,23 +137,7 @@ void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-#if USAR_SERIAL
-  Serial.begin(250000);
-  Serial.println();
 
-#if USAR_CELULA // Imprimir a equação de conversão utilizada
-  Serial.print("Kgf = (");
-  Serial.print(__angC, 10);
-  Serial.print(") * cell + (");
-  //Serial.print(__linC, 10);
-  Serial.print(__linC, 10);
-  Serial.print(")");
-  Serial.println();
-#endif //USAR_CELULA
-#endif // USAR_SERIAL
-#if USAR_SD
-    SDC.begin();                 //inicia o SDcard
-#endif // USAR_SD
 #if USAR_CELULA
     pinMode(celulaPin, INPUT);   //configura o pino A0 como entrada
 #endif // USAR_CELULA
@@ -161,61 +145,64 @@ void setup()
     pinMode(transdPin, INPUT);   //configura o pino A1 como entrada
 #endif // USAR_TRANSDUTOR
 
+#if USAR_SERIAL
+  Serial.begin(115200);
+  Serial.println();
+#endif // USAR_SERIAL
+
+#if USAR_SD
+    SDC.begin();                 //inicia o SDcard
+#endif // USAR_SD
+
+#if USAR_SD || USAR_SERIAL
+  String dataBuffer = "";
+
+#if USAR_CELULA // Imprimir a equação de conversão utilizada
+  dataBuffer += "Kgf = (\t";
+  dataBuffer += String(__angC, 10);
+  dataBuffer += "\t) * cell + (\t";
+  dataBuffer += String(__linC, 10);
+  dataBuffer += "\t)\n";
+#endif //USAR_CELULA
+
+    //---------------------------------------------------------//
+
+dataBuffer += "tempo" "\t";
+
+#if USAR_CELULA
+    dataBuffer += "raw.cell" "\t";
+    dataBuffer += "raw.Kgf" "\t";
+    dataBuffer += "avg.cell" "\t";
+    dataBuffer += "avg.Kgf" "\t";
+    dataBuffer += "avg.N" "\t";
+#endif // USAR_CELULA
+#if USAR_TRANSDUTOR
+    dataBuffer += "raw.tdt" "\t";
+    dataBuffer += "V.tdt" "\t";
+    dataBuffer += "psi.tdt" "\t";
+    #if TRANSDUTOR_PASCAL
+      dataBuffer += "pascal.tdt" "\t";
+    #endif // TRANSDUTOR_PASCAL
+    #if TRANSDUTOR_ATM
+      dataBuffer += "atm.tdt" "\t";
+    #endif // TRANSDUTOR_ATM
+    #if TRANSDUTOR_BAR
+      dataBuffer += "bar.tdt" "\t";
+    #endif // TRANSDUTOR_BAR
+#endif // USAR_TRANSDUTOR
+
+#endif // USAR_SD || USAR_SERIAL
+
 #if USAR_SD
   if (SDC) {
     sysC++;
-  digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
 #if USAR_SERIAL
     Serial.println("SD Begin");
     Serial.println(SDC.getFname());
 #endif // USAR_SERIAL
-    //---------------------------------------------------------//]
-#if USAR_CELULA // Imprimir a equação de conversão utilizada
-    SDC.theFile.print("Kgf = (");
-    SDC.tab();
-    SDC.theFile.print(__angC, 9);
-    SDC.tab();
-    SDC.theFile.print(") * cell +(");
-    SDC.tab();
-    //SDC.theFile.print(__linC, 9);
-    SDC.theFile.print(__linC,9);
-    SDC.theFile.println("\t)");
-#endif // USAR_CELULA
-    //---------------------------------------------------------//
-    SDC.theFile.print("tempo");
-#if USAR_CELULA
-    SDC.tab();
-    SDC.theFile.print("raw.cell");
-    SDC.tab();
-    SDC.theFile.print("raw.Kgf");
-    SDC.tab();
-    SDC.theFile.print("avg.cell");  //Cel filtrado
-    SDC.tab();
-    SDC.theFile.print("avg.Kgf");
-    SDC.tab();
-    SDC.theFile.print("avg.N");
-#endif // USAR_CELULA
-#if USAR_TRANSDUTOR
-    SDC.tab();
-    SDC.theFile.print("raw.tdt");
-    SDC.tab();
-    SDC.theFile.print("V.tdt");
-    SDC.tab();
-    SDC.theFile.print("psi.tdt");
-    #if TRANSDUTOR_PASCAL
-      SDC.tab();
-      SDC.theFile.print("pascal.tdt");
-    #endif // TRANSDUTOR_PASCAL
-    #if TRANSDUTOR_ATM
-      SDC.tab();
-      SDC.theFile.print("atm.tdt");
-    #endif // TRANSDUTOR_ATM
-    #if TRANSDUTOR_BAR
-      SDC.tab();
-      SDC.theFile.print("bar.tdt");
-    #endif // TRANSDUTOR_BAR
-#endif // USAR_TRANSDUTOR
-    SDC.theFile.println();
+    SDC.theFile.println(dataBuffer);
+
     SDC.close();
   }
   else
@@ -226,6 +213,9 @@ void setup()
 #endif // USAR_SERIAL
   }
 #endif // USAR_SD
+#if USAR_SERIAL
+  Serial.println(dataBuffer);
+#endif // USAR_SERIAL
 #if BuZZ
   pinMode(buzzPin, OUTPUT);
   digitalWrite(buzzPin, !buzzCmd);
@@ -269,44 +259,73 @@ void loop()
   #endif // TRANSDUTOR_BAR
 #endif // USAR_TRANSDUTOR
 
+
+#if USAR_SD || USAR_SERIAL
+  String dataBuffer = String(tempo, 3) + "\t";
+  
+#if USAR_CELULA
+    dataBuffer += String(rawCell) + "\t";
+    dataBuffer += String(kgfRaw, 3) + "\t";
+    dataBuffer += String(avgCell, 3) + "\t";
+    dataBuffer += String(kgf, 3) + "\t";
+    dataBuffer += String(kgfToN(kgf), 3) + "\t";
+  #endif // USAR_CELULA
+  #if USAR_TRANSDUTOR
+    dataBuffer += String(rawTransd) + "\t";
+    dataBuffer += String(vSens, 3) + "\t";
+    dataBuffer += String(psiVal, 3) + "\t";
+    #if TRANSDUTOR_PASCAL
+      dataBuffer += String(pascal, 3) + "\t";
+    #endif // TRANSDUTOR_PASCAL
+    #if TRANSDUTOR_ATM
+      dataBuffer += String(atm, 3) + "\t";
+    #endif // TRANSDUTOR_ATM
+    #if TRANSDUTOR_BAR
+      dataBuffer += String(bar, 3) + "\t";
+    #endif // TRANSDUTOR_BAR
+#endif // USAR_TRANSDUTOR
+
+#endif // USAR_SD || USAR_SERIAL
+
 #if USAR_SD
   if (SDC) {
     sysC++;
     digitalWrite(LED_BUILTIN, HIGH);
-    SDC.theFile.print(tempo, 3);
-  #if USAR_CELULA
-    SDC.tab();
-    SDC.theFile.print(rawCell);
-    SDC.tab();
-    SDC.theFile.print(kgfRaw, 3);
-    SDC.tab();
-    SDC.theFile.print(avgCell, 3);
-    SDC.tab();
-    SDC.theFile.print(kgf, 3);
-    SDC.tab();
-    SDC.theFile.print(kgfToN(kgf), 3);
-  #endif // USAR_CELULA
-  #if USAR_TRANSDUTOR
-    SDC.tab();
-    SDC.theFile.print(rawTransd);
-    SDC.tab();
-    SDC.theFile.print(vSens, 3);
-    SDC.tab();
-    SDC.theFile.print(psiVal, 3);
-    #if TRANSDUTOR_PASCAL
-      SDC.tab();
-      SDC.theFile.print(pascal, 3);
-    #endif // TRANSDUTOR_PASCAL
-    #if TRANSDUTOR_ATM
-      SDC.tab();
-      SDC.theFile.print(atm, 3);
-    #endif // TRANSDUTOR_ATM
-    #if TRANSDUTOR_BAR
-      SDC.tab();
-      SDC.theFile.print(bar, 3);
-    #endif // TRANSDUTOR_BAR
-#endif // USAR_TRANSDUTOR
-    SDC.theFile.println();
+    // SDC.theFile.print(tempo, 3);
+//   #if USAR_CELULA
+//     SDC.tab();
+//     SDC.theFile.print(rawCell);
+//     SDC.tab();
+//     SDC.theFile.print(kgfRaw, 3);
+//     SDC.tab();
+//     SDC.theFile.print(avgCell, 3);
+//     SDC.tab();
+//     SDC.theFile.print(kgf, 3);
+//     SDC.tab();
+//     SDC.theFile.print(kgfToN(kgf), 3);
+//   #endif // USAR_CELULA
+//   #if USAR_TRANSDUTOR
+//     SDC.tab();
+//     SDC.theFile.print(rawTransd);
+//     SDC.tab();
+//     SDC.theFile.print(vSens, 3);
+//     SDC.tab();
+//     SDC.theFile.print(psiVal, 3);
+//     #if TRANSDUTOR_PASCAL
+//       SDC.tab();
+//       SDC.theFile.print(pascal, 3);
+//     #endif // TRANSDUTOR_PASCAL
+//     #if TRANSDUTOR_ATM
+//       SDC.tab();
+//       SDC.theFile.print(atm, 3);
+//     #endif // TRANSDUTOR_ATM
+//     #if TRANSDUTOR_BAR
+//       SDC.tab();
+//       SDC.theFile.print(bar, 3);
+//     #endif // TRANSDUTOR_BAR
+// #endif // USAR_TRANSDUTOR
+    // SDC.theFile.println();
+    SDC.theFile.println(dataBuffer);
     SDC.close();
   }
   digitalWrite(LED_BUILTIN, LOW);
@@ -314,45 +333,46 @@ void loop()
 
 
 #if USAR_SERIAL
-  #if !JUST_PLOTTER
-    Serial.print(tempo, 3);
-  #endif // !JUST_PLOTTER
-  #if USAR_CELULA
-    Serial.print('\t');
-    Serial.print(rawCell);
-    Serial.print('\t');
-    #if !JUST_PLOTTER
-      Serial.print(kgfRaw, 6);
-      Serial.print('\t');
-    #endif // !JUST_PLOTTER
-    Serial.print(avgCell, 6);
-    Serial.print('\t');
-    #if !JUST_PLOTTER
-      Serial.print(kgf, 6);
-      Serial.print('\t');
-      Serial.print(kgfToN(kgf), 6);
-    #endif // !JUST_PLOTTER
-  #endif  // USAR_CELULA
-  #if USAR_TRANSDUTOR
-    Serial.print('\t');
-    Serial.print(rawTransd);
-    Serial.print('\t');
-    Serial.print(vSens, 3);
-    Serial.print('\t');
-    Serial.print(psiVal, 3);
-    #if TRANSDUTOR_PASCAL
-      Serial.print('\t');
-      Serial.print(pascal, 3);
-    #endif // TRANSDUTOR_PASCAL
-    #if TRANSDUTOR_ATM
-      Serial.print('\t');
-      Serial.print(atm, 3);
-    #endif // TRANSDUTOR_ATM
-    #if TRANSDUTOR_BAR
-      Serial.print('\t');
-      Serial.print(bar, 3);
-    #endif // TRANSDUTOR_BAR
-  #endif // USAR_TRANSDUTOR
+  // #if !JUST_PLOTTER
+  //   Serial.print(tempo, 3);
+  // #endif // !JUST_PLOTTER
+  // #if USAR_CELULA
+  //   Serial.print('\t');
+  //   Serial.print(rawCell);
+  //   Serial.print('\t');
+  //   #if !JUST_PLOTTER
+  //     Serial.print(kgfRaw, 6);
+  //     Serial.print('\t');
+  //   #endif // !JUST_PLOTTER
+  //   Serial.print(avgCell, 6);
+  //   Serial.print('\t');
+  //   #if !JUST_PLOTTER
+  //     Serial.print(kgf, 6);
+  //     Serial.print('\t');
+  //     Serial.print(kgfToN(kgf), 6);
+  //   #endif // !JUST_PLOTTER
+  // #endif  // USAR_CELULA
+  // #if USAR_TRANSDUTOR
+  //   Serial.print('\t');
+  //   Serial.print(rawTransd);
+  //   Serial.print('\t');
+  //   Serial.print(vSens, 3);
+  //   Serial.print('\t');
+  //   Serial.print(psiVal, 3);
+  //   #if TRANSDUTOR_PASCAL
+  //     Serial.print('\t');
+  //     Serial.print(pascal, 3);
+  //   #endif // TRANSDUTOR_PASCAL
+  //   #if TRANSDUTOR_ATM
+  //     Serial.print('\t');
+  //     Serial.print(atm, 3);
+  //   #endif // TRANSDUTOR_ATM
+  //   #if TRANSDUTOR_BAR
+  //     Serial.print('\t');
+  //     Serial.print(bar, 3);
+  //   #endif // TRANSDUTOR_BAR
+  // #endif // USAR_TRANSDUTOR
+  Serial.print(dataBuffer);
 #endif // USAR_SERIAL
 
 #if USAR_CELULA
