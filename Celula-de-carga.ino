@@ -12,6 +12,7 @@
 
 #define USAR_CELULA (1)      // Se for usar célula de carga
 #define USAR_TRANSDUTOR (1)  // Se for usar transdutor de pressão
+#define USAR_ENCODER (1)  // Se for usar encoder de rotação
 
 #define USAR_SD (1)  		// Se for usar cartão SD (padrão é usar)
 
@@ -42,6 +43,11 @@
 #if USAR_TRANSDUTOR
 #define transdPin A6  //Pino transdutor
 #endif                // USAR_TRANSDUTOR
+
+#if USAR_ENCODER
+#define encoderPin 2  // Pino encoder
+#define encoderSteps 20 // Espaços no disco do encoder
+#endif // USAR_ENCODER
 
 #if BuZZ
 #define buzzPin 22   //Pin that the buzzer is connected
@@ -119,6 +125,14 @@ float bar;
 #endif  //TRANSDUTOR_BAR
 #endif  // USAR_TRANSDUTOR
 
+#if USAR_ENCODER
+void encoderInterrupt(void);
+volatile unsigned long tAntigo = 0;
+volatile unsigned long tAtual = 1;
+unsigned long tDiff = 0;
+int encoderRPM = 0;
+#endif // USAR_ENCODER
+
 float tempo = 0;  // cria variável tempo começando em valor 0
 
 #if USAR_SD
@@ -162,6 +176,10 @@ void setup() {
 #if USAR_TRANSDUTOR
   pinMode(transdPin, INPUT);  //configura o pino A1 como entrada
 #endif                        // USAR_TRANSDUTOR
+#if USAR_ENCODER
+  pinMode(encoderPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(encoderPin), encoderInterrupt, RISING);
+#endif // USAR_ENCODER
 
 #if USAR_LORA
   pinMode(M0_LORA_PIN, OUTPUT);  digitalWrite(M0_LORA_PIN, LOW);
@@ -229,6 +247,10 @@ void setup() {
                 "\t";
 #endif  // TRANSDUTOR_BAR
 #endif  // USAR_TRANSDUTOR
+#if USAR_ENCODER
+  dataBuffer += "encoder.RPM"
+                "\t";
+#endif // USAR_ENCODER
 
 #endif  // USAR_SD || USAR_SERIAL
 
@@ -264,6 +286,9 @@ void setup() {
   loraBuffer += "avgTransd (ADC)\t";
   loraBuffer += "avgPSI\t";
 #endif  // USAR_TRANSDUTOR
+#if USAR_ENCODER
+    loraBuffer += "RPM\t";
+#endif // USAR_ENCODER
   LoRa.println(loraBuffer);
 #endif // LoRaHasHeader
 
@@ -286,6 +311,11 @@ void loop() {
 #if USAR_TRANSDUTOR
   rawTransd = analogRead(transdPin);  // lê o valor retornado pelo transdutor de pressão
 #endif                                // USAR_TRANSDUTOR
+#if USAR_ENCODER
+  tDiff = tAtual - tAntigo;
+  encoderRPM = 60000000 / (tDiff * encoderSteps);
+#endif // USAR_ENCODER
+
   tempo = float(micros()) / 1000000.0;
 
 #if USAR_CELULA
@@ -335,15 +365,18 @@ void loop() {
   dataBuffer += String(bar, 3) + "\t";
 #endif  // TRANSDUTOR_BAR
 #endif  // USAR_TRANSDUTOR
+#if USAR_ENCODER
+  dataBuffer += String(encoderRPM) + "\t";
+#endif // USAR_ENCODER
 
 #endif  // USAR_SD || USAR_SERIAL
 
 #if USAR_SD
   if (SDC) {
-  sysC++;
-  digitalWrite(LED_BUILTIN, HIGH);
-  SDC.theFile.println(dataBuffer);
-  SDC.close();
+    sysC++;
+    digitalWrite(LED_BUILTIN, HIGH);
+    SDC.theFile.println(dataBuffer);
+    SDC.close();
   }
   digitalWrite(LED_BUILTIN, LOW);
 #endif  // USAR_SD
@@ -363,6 +396,9 @@ void loop() {
     loraBuffer += String(avgTransd) + "\t";
     loraBuffer += String(avgPSI, 3) + "\t";
 #endif  // USAR_TRANSDUTOR
+#if USAR_ENCODER
+    loraBuffer += String(encoderRPM) + "\t";
+#endif // USAR_ENCODER
     LoRa.println(loraBuffer);
   }
 #endif // USAR_LORA
@@ -412,6 +448,15 @@ void loop() {
   beep(sysC);
 #endif  // BEEPING
 }
+
+/**************************************************************/
+
+#if USAR_ENCODER
+void encoderInterrupt(void) {
+  tAntigo = tAtual;
+  tAtual = micros();
+}
+#endif // USAR_ENCODER
 
 /**************************************************************/
 
