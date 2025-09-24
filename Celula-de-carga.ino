@@ -12,7 +12,7 @@
 
 #define USAR_CELULA (1)      // Se for usar célula de carga
 #define USAR_TRANSDUTOR (1)  // Se for usar transdutor de pressão
-#define USAR_ENCODER (1)  // Se for usar encoder de rotação
+#define USAR_ENCODER (0)  // Se for usar encoder de rotação
 
 #define USAR_SD (1)  		// Se for usar cartão SD (padrão é usar)
 
@@ -20,6 +20,7 @@
 #define USAR_LORA (1)  		// Se for utiizar o LoRa (monitorar por telemetria)
 #define BuZZ (1)         	// Se for usar Buzzer
 
+#define NAME_SD "TE"
 /**************************************************************/
 
 #if USAR_TRANSDUTOR
@@ -41,7 +42,7 @@
 #endif                 // USAR_CELULA
 
 #if USAR_TRANSDUTOR
-#define transdPin A6  //Pino transdutor
+#define transdPin A4  //Pino transdutor
 #endif                // USAR_TRANSDUTOR
 
 #if USAR_ENCODER
@@ -55,7 +56,7 @@
 #endif               // BuZZ
 
 #if USAR_LORA
-#define LORA_DELAY 2500 // Atraso em ms de cada transmissao do LoRa
+#define LORA_DELAY 5 // Atraso em ms de cada transmissao do LoRa
 #define M0_LORA_PIN 12 // Pinos adicionais do LoRa
 #define M1_LORA_PIN 11 // Pinos adicionais do LoRa
 #define AUX_LORA_PIN 10 // Pinos adicionais do LoRa
@@ -67,10 +68,10 @@
 #define ACEL_G 9.80664999999998  // m/s^2 = 1g
 #define kgfToN(X) (X * ACEL_G)   /*Convert Kgf to N*/
 
-#define __Xi 24.0  /*Valor da celula sem corpo de prova*/
-#define __Xf 250.0 /*Valor da celula com corpo de prova*/
+#define __Xi 15.0  /*Valor da celula sem corpo de prova*/
+#define __Xf 400.0 /*Valor da celula com corpo de prova*/
 #define __Yi 0.0   /*Deve conter o valor 0*/
-#define __Yf 101.1 /*Peso real do corpo de prova (kg)*/
+#define __Yf 194.9 /*Peso real do corpo de prova (kg)*/
 
 //7.684 - > 61.7
 
@@ -136,11 +137,7 @@ int encoderRPM = 0;
 float tempo = 0;  // cria variável tempo começando em valor 0
 
 #if USAR_SD
-#if USAR_CELULA
-SDCH SDC(53, "cell");  //cria o objeto SDC (cartão de memória SD) e atribui o cs ao pino 53
-#else
-SDCH SDC(53, "hidro");  //cria o objeto SDC (cartão de memória SD) e atribui o cs ao pino 53
-#endif  // USAR_CELULA
+SDCH SDC(53, NAME_SD);  //cria o objeto SDC (cartão de memória SD) e atribui o cs ao pino 53
 #endif  // USAR_SD
 
 #if USAR_CELULA
@@ -277,17 +274,17 @@ void setup() {
 #endif  // USAR_SERIAL
 
 #if LoRaHasHeader
-  String loraBuffer = "Tempo (s)\t";
+  String loraBuffer = "Tempo.s\t";
 #if USAR_CELULA
-  loraBuffer += "avgCell (ADC)\t";
-  loraBuffer += "avgKgf\t";
+  loraBuffer += "avgCell.adc\t";
+  loraBuffer += "avgCell.kgf\t";
 #endif  // USAR_CELULA
 #if USAR_TRANSDUTOR
-  loraBuffer += "avgTransd (ADC)\t";
-  loraBuffer += "avgPSI\t";
+  loraBuffer += "avgTransd.adc\t";
+  loraBuffer += "avgTransd.psi\t";
 #endif  // USAR_TRANSDUTOR
 #if USAR_ENCODER
-    loraBuffer += "RPM\t";
+    loraBuffer += "vel.rpm\t";
 #endif // USAR_ENCODER
   LoRa.println(loraBuffer);
 #endif // LoRaHasHeader
