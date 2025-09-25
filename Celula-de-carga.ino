@@ -30,6 +30,7 @@
 #endif                                              // USAR_TRANSDUTOR
 
 #define LoRaHasHeader (1 && (USAR_LORA))
+#define LoRaContinuos (0 && (USAR_LORA))             // Se o LoRa deve transmitir continuamente ou só por algum tempo
 
 #define JUST_PLOTTER (0 && (USAR_SERIAL))  // Para ocultar indicação de tempo (usar plotter do arduino)
 #define BEEPING (1 && (BuZZ))              // Para sistema apitar quantas partes estão operantes
@@ -56,10 +57,15 @@
 #endif               // BuZZ
 
 #if USAR_LORA
-#define LORA_DELAY 5 // Atraso em ms de cada transmissao do LoRa
+#define LORA_DELAY 5 // Atraso em s de cada transmissao do LoRa
 #define M0_LORA_PIN 12 // Pinos adicionais do LoRa
 #define M1_LORA_PIN 11 // Pinos adicionais do LoRa
 #define AUX_LORA_PIN 10 // Pinos adicionais do LoRa
+
+#if !LoRaContinuos
+#define LORA_MAX_T 60 // Tempo máximo em s de transmissão LoRa no início do processamento
+#endif // LoRaContinuos
+
 #endif // USAR_LORA
 
 /**************************************************************/
@@ -154,7 +160,7 @@ MovingAverage avgPSI(10);
 
 #if USAR_LORA
 HardwareSerial &LoRa(Serial2);
-Helpful HelpLoRa;  //cria o objeto help para utilizar a função eachT
+Helpful helpLoRa;  //cria o objeto help para utilizar a função eachT
 #endif // USAR_LORA
 
 #define holdT 0.1
@@ -284,10 +290,13 @@ void setup() {
   loraBuffer += "avgTransd.psi\t";
 #endif  // USAR_TRANSDUTOR
 #if USAR_ENCODER
-    loraBuffer += "vel.rpm\t";
+  loraBuffer += "vel.rpm\t";
 #endif // USAR_ENCODER
   LoRa.println(loraBuffer);
 #endif // LoRaHasHeader
+#if USAR_LORA && !LoRaContinuos
+  helpLoRa.forT(LORA_MAX_T);
+#endif // USAR_LORA && !LoRaContinuos
 
 #if BuZZ
   pinMode(buzzPin, OUTPUT);
@@ -383,7 +392,10 @@ void loop() {
 #endif  // USAR_SERIAL
 
 #if USAR_LORA
-  if(HelpLoRa.eachT(LORA_DELAY)) {
+#if !LoRaContinuos
+  if(helpLoRa.forT())
+#endif // !LoRaContinuos
+  if(helpLoRa.eachT(LORA_DELAY)) {
     String loraBuffer = String(tempo, 3) + "\t";
 #if USAR_CELULA
     loraBuffer += String(avgCell, 3) + "\t";
