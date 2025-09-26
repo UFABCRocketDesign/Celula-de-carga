@@ -16,7 +16,7 @@
 
 #define USAR_SD (1)  		// Se for usar cartão SD (padrão é usar)
 
-#define USAR_SERIAL (1)  	// Se for exibir na Serial
+#define USAR_SERIAL (0)  	// Se for exibir na Serial
 #define USAR_LORA (1)  		// Se for utiizar o LoRa (monitorar por telemetria)
 #define BuZZ (1)         	// Se for usar Buzzer
 
@@ -74,10 +74,10 @@
 #define ACEL_G 9.80664999999998  // m/s^2 = 1g
 #define kgfToN(X) (X * ACEL_G)   /*Convert Kgf to N*/
 
-#define __Xi 15.0  /*Valor da celula sem corpo de prova*/
-#define __Xf 400.0 /*Valor da celula com corpo de prova*/
+#define __Xi 12.5  /*Valor da celula sem corpo de prova*/
+#define __Xf 361.5 /*Valor da celula com corpo de prova*/
 #define __Yi 0.0   /*Deve conter o valor 0*/
-#define __Yf 194.9 /*Peso real do corpo de prova (kg)*/
+#define __Yf 177.4 /*Peso real do corpo de prova (kg)*/
 
 //7.684 - > 61.7
 
@@ -233,10 +233,12 @@ void setup() {
 #if USAR_TRANSDUTOR
   dataBuffer += "raw.tdt"
                 "\t";
+  dataBuffer += "avgTransd.adc\t";
   dataBuffer += "V.tdt"
                 "\t";
   dataBuffer += "psi.tdt"
                 "\t";
+  dataBuffer += "avgTransd.psi\t";
 #if TRANSDUTOR_PASCAL
   dataBuffer += "pascal.tdt"
                 "\t";
@@ -359,8 +361,10 @@ void loop() {
 #endif  // USAR_CELULA
 #if USAR_TRANSDUTOR
   dataBuffer += String(rawTransd) + "\t";
+    dataBuffer += String(avgTransd) + "\t";
   dataBuffer += String(vSens, 3) + "\t";
   dataBuffer += String(psiVal, 3) + "\t";
+    dataBuffer += String(avgPSI, 3) + "\t";
 #if TRANSDUTOR_PASCAL
   dataBuffer += String(pascal, 3) + "\t";
 #endif  // TRANSDUTOR_PASCAL
