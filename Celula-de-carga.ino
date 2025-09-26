@@ -215,46 +215,33 @@ void setup() {
 
   //---------------------------------------------------------//
 
-  dataBuffer += "tempo"
-                "\t";
+  dataBuffer += "tempo.s\t";
 
 #if USAR_CELULA
-  dataBuffer += "raw.cell"
-                "\t";
-  dataBuffer += "raw.Kgf"
-                "\t";
-  dataBuffer += "avg.cell"
-                "\t";
-  dataBuffer += "avg.Kgf"
-                "\t";
-  dataBuffer += "avg.N"
-                "\t";
+  dataBuffer += "adc.raw.cell\t";
+  dataBuffer += "adc.avg.cell\t";
+  dataBuffer += "Kgf.raw.cell\t";
+  dataBuffer += "Kgf.avg.cell\t";
+  dataBuffer += "N.avg.cell\t";
 #endif  // USAR_CELULA
 #if USAR_TRANSDUTOR
-  dataBuffer += "raw.tdt"
-                "\t";
-  dataBuffer += "avgTransd.adc\t";
-  dataBuffer += "V.tdt"
-                "\t";
-  dataBuffer += "psi.tdt"
-                "\t";
-  dataBuffer += "avgTransd.psi\t";
+  dataBuffer += "adc.raw.tdt\t";
+  dataBuffer += "adc.avg.tdt\t";
+  dataBuffer += "V.raw.tdt\t";
+  dataBuffer += "psi.raw.tdt\t";
+  dataBuffer += "psi.avg.tdt\t";
 #if TRANSDUTOR_PASCAL
-  dataBuffer += "pascal.tdt"
-                "\t";
+  dataBuffer += "pa.raw.tdt\t";
 #endif  // TRANSDUTOR_PASCAL
 #if TRANSDUTOR_ATM
-  dataBuffer += "atm.tdt"
-                "\t";
+  dataBuffer += "atm.raw.tdt\t";
 #endif  // TRANSDUTOR_ATM
 #if TRANSDUTOR_BAR
-  dataBuffer += "bar.tdt"
-                "\t";
+  dataBuffer += "bar.raw.tdt\t";
 #endif  // TRANSDUTOR_BAR
 #endif  // USAR_TRANSDUTOR
 #if USAR_ENCODER
-  dataBuffer += "encoder.RPM"
-                "\t";
+  dataBuffer += "RPM.raw.enc\t";
 #endif // USAR_ENCODER
 
 #endif  // USAR_SD || USAR_SERIAL
@@ -282,17 +269,18 @@ void setup() {
 #endif  // USAR_SERIAL
 
 #if LoRaHasHeader
-  String loraBuffer = "Tempo.s\t";
+  String loraBuffer = "tempo.s\t";
+
 #if USAR_CELULA
-  loraBuffer += "avgCell.adc\t";
-  loraBuffer += "avgCell.kgf\t";
+  loraBuffer += "adc.avg.cell\t";
+  loraBuffer += "Kgf.avg.cell\t";
 #endif  // USAR_CELULA
 #if USAR_TRANSDUTOR
-  loraBuffer += "avgTransd.adc\t";
-  loraBuffer += "avgTransd.psi\t";
+  loraBuffer += "adc.avg.tdt\t";
+  loraBuffer += "psi.avg.tdt\t";
 #endif  // USAR_TRANSDUTOR
 #if USAR_ENCODER
-  loraBuffer += "vel.rpm\t";
+  loraBuffer += "RPM.raw.enc\t";
 #endif // USAR_ENCODER
   LoRa.println(loraBuffer);
 #endif // LoRaHasHeader
@@ -324,7 +312,8 @@ void loop() {
   encoderRPM = 60000000 / (tDiff * encoderSteps);
 #endif // USAR_ENCODER
 
-  tempo = float(micros()) / 1000000.0;
+  tempo = float(millis()) / 1000.0;
+  // tempo = float(micros()) / 1000000.0;
 
 #if USAR_CELULA
   avgCell.addValor(rawCell);
@@ -354,17 +343,17 @@ void loop() {
 
 #if USAR_CELULA
   dataBuffer += String(rawCell) + "\t";
-  dataBuffer += String(kgfRaw, 3) + "\t";
   dataBuffer += String(avgCell, 3) + "\t";
+  dataBuffer += String(kgfRaw, 3) + "\t";
   dataBuffer += String(avgKgf, 3) + "\t";
   dataBuffer += String(kgfToN(avgKgf), 3) + "\t";
 #endif  // USAR_CELULA
 #if USAR_TRANSDUTOR
   dataBuffer += String(rawTransd) + "\t";
-    dataBuffer += String(avgTransd) + "\t";
+  dataBuffer += String(avgTransd) + "\t";
   dataBuffer += String(vSens, 3) + "\t";
   dataBuffer += String(psiVal, 3) + "\t";
-    dataBuffer += String(avgPSI, 3) + "\t";
+  dataBuffer += String(avgPSI, 3) + "\t";
 #if TRANSDUTOR_PASCAL
   dataBuffer += String(pascal, 3) + "\t";
 #endif  // TRANSDUTOR_PASCAL
